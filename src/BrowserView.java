@@ -2,6 +2,15 @@ import java.awt.Dimension;
 import java.net.URL;
 import java.util.Optional;
 import java.util.ResourceBundle;
+
+import javax.imageio.ImageIO;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.events.EventListener;
+import org.w3c.dom.events.EventTarget;
+
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
@@ -23,20 +32,14 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebView;
-import javax.imageio.ImageIO;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.events.EventListener;
-import org.w3c.dom.events.EventTarget;
 
 
 /**
  * A class used to display the viewer for a simple HTML browser.
- * 
+ *
  * See this tutorial for help on how to use the variety of components:
  *   http://download.oracle.com/otndocs/products/javafx/2/samples/Ensemble/
- * 
+ *
  * @author Owen Astrachan
  * @author Marcin Dobosz
  * @author Yuzhang Han
@@ -61,6 +64,7 @@ public class BrowserView {
     private Button myBackButton;
     private Button myNextButton;
     private Button myHomeButton;
+    private Button myFavoirateButton;
     // favorites
     private ComboBox<String> myFavorites;
     // get strings from resource file
@@ -84,7 +88,7 @@ public class BrowserView {
         enableButtons();
         // create scene to hold UI
         myScene = new Scene(root, DEFAULT_SIZE.width, DEFAULT_SIZE.height);
-        //myScene.getStylesheets().add(DEFAULT_RESOURCE_PACKAGE + STYLESHEET);
+        myScene.getStylesheets().add(DEFAULT_RESOURCE_PACKAGE + STYLESHEET);
     }
 
     /**
@@ -169,6 +173,7 @@ public class BrowserView {
         myBackButton.setDisable(! myModel.hasPrevious());
         myNextButton.setDisable(! myModel.hasNext());
         myHomeButton.setDisable(myModel.getHome() == null);
+
     }
 
     // convenience method to create HTML page display
@@ -199,22 +204,44 @@ public class BrowserView {
         // create buttons, with their associated actions
         // old style way to do set up callback (anonymous class)
         myBackButton = makeButton("BackCommand", new EventHandler<ActionEvent>() {
-            @Override      
-            public void handle (ActionEvent event) {       
-                back();        
-            }      
+            @Override
+            public void handle (ActionEvent event) {
+                back();
+            }
         });
         result.getChildren().add(myBackButton);
         // new style way to do set up callback (lambdas)
         myNextButton = makeButton("NextCommand", event -> next());
         result.getChildren().add(myNextButton);
-        myHomeButton = makeButton("HomeCommand", event -> home());
-        result.getChildren().add(myHomeButton);
+
+
+     /* for(String string: myFavorites.getItems() ){
+    	  showFavorite(string);
+      }*/
+
+
         // if user presses button or enter in text field, load/show the URL
         EventHandler<ActionEvent> showHandler = new ShowPage();
         result.getChildren().add(makeButton("GoCommand", showHandler));
         myURLDisplay = makeInputField(40, showHandler);
         result.getChildren().add(myURLDisplay);
+
+
+        myHomeButton = makeButton("HomeCommand", event -> home());
+        result.getChildren().add(myHomeButton);
+        myFavoirateButton = makeButton("AddFavoriteCommand", event -> addFavorite());
+        result.getChildren().add(myFavoirateButton);
+        myFavorites= new ComboBox<String>();
+        myFavorites.valueProperty().addListener(new ChangeListener<String>() {
+        	@Override public void changed(ObservableValue<? extends String> observable,
+        	           String oldValue,
+        	           String newValue){
+        		showFavorite(newValue);
+        	}
+
+
+        });
+        result.getChildren().add(myFavorites);
         return result;
     }
 
@@ -231,7 +258,7 @@ public class BrowserView {
     // makes a button using either an image or a label
     private Button makeButton (String property, EventHandler<ActionEvent> handler) {
         // represent all supported image suffixes
-        final String IMAGEFILE_SUFFIXES = 
+        final String IMAGEFILE_SUFFIXES =
             String.format(".*\\.(%s)", String.join("|", ImageIO.getReaderFileSuffixes()));
 
         Button result = new Button();
@@ -257,10 +284,10 @@ public class BrowserView {
     // display page
     // very old style way create a callback (inner class)
     private class ShowPage implements EventHandler<ActionEvent> {
-        @Override      
-        public void handle (ActionEvent event) {       
-            showPage(myURLDisplay.getText());      
-        }      
+        @Override
+        public void handle (ActionEvent event) {
+            showPage(myURLDisplay.getText());
+        }
     }
 
 
